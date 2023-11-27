@@ -206,11 +206,10 @@ class FirstAvailable(VarSelector):
     def select_variable(self, grid):
             # Iterate over domain values
         for i in range(grid.get_width()):
-            for j in range(grid.get_width()):
-                for d in g.get_cells()[i][j]:
-                    # Return the index of the first variable whose domain is greater than 1
-                    if (d.length() > 1):
-                        return i, j
+            for j in range(grid.get_width()): 
+                # Return the index of the first variable whose domain is greater than 1
+                if (len(g.get_cells()[i][j]) > 1):
+                    return i, j
                 #print()
         pass
 
@@ -363,7 +362,6 @@ for p in problems:
         for j in range(g.get_width()):
 
             print('Domain of ', i, j, ': ', g.get_cells()[i][j])
-
             for d in g.get_cells()[i][j]:
                 print(d, end=' ')
             print()
