@@ -204,7 +204,14 @@ class FirstAvailable(VarSelector):
     Naïve method for selecting variables; simply returns the first variable encountered whose domain is larger than one.
     """
     def select_variable(self, grid):
-        # Implement here the first available heuristic
+            # Iterate over domain values
+        for i in range(grid.get_width()):
+            for j in range(grid.get_width()):
+                for d in g.get_cells()[i][j]:
+                    # Return the index of the first variable whose domain is greater than 1
+                    if (d.length() > 1):
+                        return i, j
+                #print()
         pass
 
 class MRV(VarSelector):
