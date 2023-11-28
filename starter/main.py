@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 class PlotResults:
     """
@@ -255,7 +256,7 @@ class AC3:
                     variables_assigned.append((row, j))
 
                 grid.get_cells()[row][j] = new_domain
-        
+        #print(variables_assigned)
         return variables_assigned, False
 
     def remove_domain_column(self, grid, row, column):
@@ -276,7 +277,7 @@ class AC3:
                     variables_assigned.append((j, column))
 
                 grid.get_cells()[j][column] = new_domain
-
+        #print(variables_assigned)
         return variables_assigned, False
 
     def remove_domain_unit(self, grid, row, column):
@@ -303,6 +304,7 @@ class AC3:
                     variables_assigned.append((i, j))
 
                 grid.get_cells()[i][j] = new_domain
+        #print(variables_assigned)
         return variables_assigned, False
 
     def pre_process_consistency(self, grid):
@@ -320,14 +322,8 @@ class AC3:
                 if (len(grid.get_cells()[i][j]) == 1):
                     Q.append((i, j))
 
-        print(Q)
-        
-        grid.print()
-        if self.consistency(grid, Q):
-            print("Pre processing completed successfully")
-            grid.print()
-        else:
-            print("Pre processing failed")
+        self.consistency(grid, Q)
+
 
             
 
@@ -354,21 +350,23 @@ class AC3:
         while(Q):
             i,j = Q.pop()
             
-            assigned_from_remove_row, isRemoveRowFailure = self.remove_domain_row(grid, i, j)
-            if isRemoveRowFailure:
+            vars_assigned, failure = self.remove_domain_row(grid, i, j)
+            if failure:
                 return False
+            if vars_assigned:
+                Q.extend(vars_assigned)
             
-            assigned_from_remove_col, isRemoveColFailure = self.remove_domain_column(grid, i, j)
-            if isRemoveColFailure:
+            vars_assigned, failure = self.remove_domain_column(grid, i, j)
+            if failure:
                 return False
-            
-            assigned_from_remove_unit, isRemoveUnitFailure = self.remove_domain_unit(grid, i, j)
-            if isRemoveUnitFailure:
+            if vars_assigned:
+                Q.extend(vars_assigned)
+
+            vars_assigned, failure = self.remove_domain_unit(grid, i, j)
+            if failure:
                 return False
-            
-            Q.append(assigned_from_remove_row)
-            Q.append(assigned_from_remove_col)
-            Q.append(assigned_from_remove_unit)
+            if vars_assigned:
+                Q.extend(vars_assigned)
 
         return True
 
@@ -377,7 +375,7 @@ class Backtracking:
     Class that implements backtracking search for solving CSPs. 
     """
 
-    def search(self, grid, var_selector):
+    def search(self, grid, var_selector, ac3):
         """
         Implements backtracking search with inference. 
         """
@@ -394,17 +392,20 @@ class Backtracking:
                 copy_grid = grid.copy()
                 copy_grid.get_cells()[i][j] = d
 
-                rb = self.search(copy_grid, var_selector)
-                if rb and rb.is_solved():
-                    return rb
+                if ac3.consistency(copy_grid, [(i,j)]):
+                    rb = self.search(copy_grid, var_selector, ac3)
+                    if rb and rb.is_solved():
+                        return rb
         
 
         return None
 
 
-file = open('tutorial_problem.txt', 'r')
-# file = open('top95.txt', 'r')
+#file = open('tutorial_problem.txt', 'r')
+file = open('top95.txt', 'r')
 problems = file.readlines()
+runtimes_first_available = []
+runtimes_mrv = []
 
 for p in problems:
     # Read problem from string
@@ -412,57 +413,35 @@ for p in problems:
     g.read_file(p)
 
     bt = Backtracking()
-
     first_available_selector = FirstAvailable()
     mrv_selector = MRV()
 
-    sol_fa = bt.search(g.copy(), first_available_selector)
+    ac3 = AC3()
+
+    start_time_fa = time.time()
+    ac3.pre_process_consistency(g)
+    sol_fa = bt.search(g.copy(), first_available_selector,ac3)
+    end_time_fa = time.time()
     if (sol_fa):
         print("Successful solution found for FA")
-        sol_fa.print()
     else:
         print("No solution found for FirstAvailable selector")
 
-    sol_mrv = bt.search(g.copy(), mrv_selector)
+    runtimes_first_available.append(end_time_fa - start_time_fa)
+
+    start_time_mrv = time.time()
+    ac3.pre_process_consistency(g)
+    sol_mrv = bt.search(g.copy(), mrv_selector,ac3)
+    end_time_mrv = time.time()
     if (sol_mrv):
         print("Successful solution found for MRV")
-        sol_mrv.print()
     else:
         print("No solution found for MRV selector")
 
-    # Instance of AC3 Object
-    ac3 = AC3()
-    ac3.pre_process_consistency(g)
-    # Making all variables in the first row arc consistent with (0, 0), whose value is 4
-    #variables_assigned, failure = ac3.remove_domain_row(g, 0, 0)
+    runtimes_mrv.append(end_time_mrv - start_time_mrv)
 
-    # The domain of all variables in the first row must not have 4
-    #print('Removed all 4s from the first row')
-    #g.print_domains()
-
-    # # variables_assigned contains all variables whose domain reduced to size 1 in the remove_domain_row opeation
-    #print('Variables that were assigned by remove_domain_row: ', variables_assigned)
-
-    # # failture returns True if any of the variables in the row were reduced to size 0
-    #print('Failure: ', failure)
-    #print()
-
-    # # Making all variables in the first column arc consistent with (0, 0), whose value is 4
-    #variables_assigned, failure = ac3.remove_domain_column(g, 0, 0)
-
-    # # The domain of all variables in the first column must not have 4
-    #print('Removed all 4s from the first column')
-    #g.print_domains()
-    #print()
-
-    # # Making all variables in the first unit arc consistent with (0, 0), whose value is 4
-    #variables_assigned, failure = ac3.remove_domain_unit(g, 0, 0)
-
-    # # The domain of all variables in the first column must not have 4
-    #print('Removed all 4s from the first unit')
-    #g.print_domains()
-    #print()
-
-    #print('Is the current grid a solution? ', g.is_solved())
-
+plotter = PlotResults()
+plotter.plot_results(runtimes_mrv, runtimes_first_available,
+"Running Time Backtracking (MRV)",
+"Running Time Backtracking (FA)", "running_time")
 
