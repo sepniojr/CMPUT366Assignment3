@@ -204,13 +204,12 @@ class FirstAvailable(VarSelector):
     Naïve method for selecting variables; simply returns the first variable encountered whose domain is larger than one.
     """
     def select_variable(self, grid):
-            # Iterate over domain values
+        # Iterate through cells
         for i in range(grid.get_width()):
             for j in range(grid.get_width()): 
                 # Return the index of the first variable whose domain is greater than 1
                 if (len(g.get_cells()[i][j]) > 1):
                     return i, j
-                #print()
         pass
 
 class MRV(VarSelector):
@@ -218,8 +217,20 @@ class MRV(VarSelector):
     Implements the MRV heuristic, which returns one of the variables with smallest domain. 
     """
     def select_variable(self, grid):
-        # Implement here the mrv heuristic
-        pass
+
+        # Set the smallest tentative domain to the largest possible domain
+        smallest_domain = 10
+
+        # Iterate through cells
+        for i in range(grid.get_width()):
+            for j in range(grid.get_width()): 
+                # Return the index of the variable with the smallest domain
+                if (len(g.get_cells()[i][j]) < smallest_domain):
+                    smallest_domain = len(g.get_cells()[i][j])
+                    var = (i, j)
+
+        return var
+        
 
 
 class AC3:
